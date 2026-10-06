@@ -1,0 +1,12 @@
+{
+  "name": "what-if---scenario-calculator",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "build_manual_pdf.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "puppeteer": "^24.0.0"
+  }
+}

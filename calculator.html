@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What-If Scenario Simulator | 3Sci Open Source Work Hack</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090f17;
+      --card-bg: #111a26;
+      --card-border: #1e2c3d;
+      --accent: #00d2b4;
+      --accent-dim: rgba(0, 210, 180, 0.15);
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+      --profit: #10b981;
+      --costs: #ef4444;
+      --rev: #38bdf8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 30px 40px; min-height: 100vh; }
+    
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid var(--card-border);
+      padding-bottom: 16px;
+      margin-bottom: 24px;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-logo {
+      height: 48px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+    .brand-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 1px;
+    }
+    .badge {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid var(--accent);
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    .grid-container {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 24px;
+    }
+
+    /* Controls Panel */
+    .panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 10px;
+    }
+    .panel-title {
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+    }
+    .presets {
+      display: flex;
+      gap: 6px;
+    }
+    .btn-preset {
+      background: #1c2b3d;
+      color: #cbd5e1;
+      border: 1px solid #2d3f55;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-preset:hover { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+
+    .control-group {
+      margin-bottom: 18px;
+    }
+    .control-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .control-val {
+      color: #fff;
+      font-size: 15px;
+      font-weight: 800;
+    }
+    input[type=range] {
+      width: 100%;
+      height: 6px;
+      background: #233448;
+      border-radius: 3px;
+      outline: none;
+      -webkit-appearance: none;
+    }
+    input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: var(--accent);
+      cursor: pointer;
+      box-shadow: 0 0 10px rgba(0, 210, 180, 0.4);
+    }
+
+    /* KPI Highlights */
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 16px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .kpi-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      letter-spacing: 0.5px;
+    }
+    .kpi-val {
+      font-size: 26px;
+      font-weight: 800;
+      margin: 8px 0 4px 0;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .kpi-val.good { color: var(--profit); }
+    .kpi-val.rev { color: var(--rev); }
+    .kpi-val.alert { color: var(--costs); }
+
+    /* Chart Box */
+    .chart-box {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 24px;
+      height: 480px;
+      display: flex;
+      flex-direction: column;
+    }
+    .chart-header {
+      font-size: 15px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .chart-wrapper {
+      position: relative;
+      flex-grow: 1;
+      width: 100%;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--card-border);
+      margin-top: 28px;
+      padding-top: 14px;
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+    .footer-link {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .footer-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="brand-group">
+      <!-- 3Sci Logo Embedded Directly -->
+      <img src="templates/logo_white.png" class="brand-logo" alt="3Sci Logo" onerror="this.src='logo_white.png'; this.onerror=null;">
+      <div>
+        <div class="brand-title">3SCI SCENARIO SIMULATOR</div>
+        <div style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">Interactive What-If Cash Flow, Break-Even & Unit Economics Engine</div>
+      </div>
+    </div>
+    <div class="badge">Open Source Hack #2</div>
+  </header>
+
+  <div class="grid-container">
+    <!-- Controls Sidebar -->
+    <div class="panel">
+      <div class="panel-header">
+        <span class="panel-title">Model Parameters</span>
+        <div class="presets">
+          <button class="btn-preset" onclick="setPreset('conservative')">Cautious</button>
+          <button class="btn-preset" onclick="setPreset('base')">Base</button>
+          <button class="btn-preset" onclick="setPreset('aggressive')">Growth</button>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Monthly Retainer / Price</span>
+          <span class="control-val" id="val-price">$250</span>
+        </div>
+        <input type="range" id="param-price" min="50" max="1500" step="25" value="250" oninput="updateModel()">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Current Active Clients</span>
+          <span class="control-val" id="val-clients">30</span>
+        </div>
+        <input type="range" id="param-clients" min="1" max="150" step="1" value="30" oninput="updateModel()">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>New Clients Added / Month</span>
+          <span class="control-val" id="val-new-clients">5</span>
+        </div>
+        <input type="range" id="param-new-clients" min="0" max="30" step="1" value="5" oninput="updateModel()">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Monthly Client Churn Rate</span>
+          <span class="control-val" id="val-churn">5.0%</span>
+        </div>
+        <input type="range" id="param-churn" min="0" max="25" step="0.5" value="5.0" oninput="updateModel()">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Fixed Monthly Overhead (OpEx)</span>
+          <span class="control-val" id="val-fixed">$5,000</span>
+        </div>
+        <input type="range" id="param-fixed" min="500" max="25000" step="250" value="5000" oninput="updateModel()">
+      </div>
+
+      <div class="control-group">
+        <div class="control-label">
+          <span>Direct Cost per Client (COGS)</span>
+          <span class="control-val" id="val-cogs">$30</span>
+        </div>
+        <input type="range" id="param-cogs" min="0" max="300" step="5" value="30" oninput="updateModel()">
+      </div>
+    </div>
+
+    <!-- Right Column: Visual Dashboard -->
+    <div>
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <span class="kpi-label">Break-Even Volume</span>
+          <div class="kpi-val" id="kpi-breakeven-clients">23</div>
+          <span class="kpi-sub" id="kpi-breakeven-rev">$5,750 / mo threshold</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Net Unit Margin</span>
+          <div class="kpi-val good" id="kpi-unit-margin">$220</div>
+          <span class="kpi-sub" id="kpi-margin-pct">88.0% contribution</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Month 1 Net Profit</span>
+          <div class="kpi-val good" id="kpi-m1-profit">$2,260</div>
+          <span class="kpi-sub" id="kpi-m1-rev">From $8,250 revenue</span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Month 12 Projected Run-Rate</span>
+          <div class="kpi-val rev" id="kpi-m12-profit">$8,420</div>
+          <span class="kpi-sub" id="kpi-m12-clients">61 active clients</span>
+        </div>
+      </div>
+
+      <div class="chart-box">
+        <div class="chart-header">
+          <span>12-Month Projections: Revenue vs Costs vs Net Margin</span>
+          <span style="color: var(--accent); font-weight: 700;">Live Forecast</span>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="scenarioChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <div>
+      <a href="https://3sci.com" target="_blank" rel="noopener noreferrer" class="footer-link">3sci.com</a>
+      <span style="margin-left: 8px;">• Open Source Tools for Founders & Strategists</span>
+    </div>
+    <span>No cloud fees • Zero telemetry • 100% Client-Side</span>
+  </footer>
+
+  <script>
+    let chartInstance = null;
+
+    const PRESETS = {
+      conservative: { price: 200, clients: 20, newClients: 2, churn: 8.0, fixed: 4500, cogs: 35 },
+      base:         { price: 250, clients: 30, newClients: 5, churn: 5.0, fixed: 5000, cogs: 30 },
+      aggressive:   { price: 300, clients: 35, newClients: 9, churn: 3.5, fixed: 6500, cogs: 25 }
+    };
+
+    function setPreset(key) {
+      const p = PRESETS[key];
+      document.getElementById('param-price').value = p.price;
+      document.getElementById('param-clients').value = p.clients;
+      document.getElementById('param-new-clients').value = p.newClients;
+      document.getElementById('param-churn').value = p.churn;
+      document.getElementById('param-fixed').value = p.fixed;
+      document.getElementById('param-cogs').value = p.cogs;
+      updateModel();
+    }
+
+    function updateModel() {
+      const price = parseFloat(document.getElementById('param-price').value);
+      const startingClients = parseInt(document.getElementById('param-clients').value);
+      const newClientsPerMo = parseInt(document.getElementById('param-new-clients').value);
+      const churnPct = parseFloat(document.getElementById('param-churn').value) / 100;
+      const fixedOpEx = parseFloat(document.getElementById('param-fixed').value);
+      const cogsPerClient = parseFloat(document.getElementById('param-cogs').value);
+
+      // Update Slider Label Displays
+      document.getElementById('val-price').innerText = '$' + price.toLocaleString();
+      document.getElementById('val-clients').innerText = startingClients;
+      document.getElementById('val-new-clients').innerText = newClientsPerMo;
+      document.getElementById('val-churn').innerText = (churnPct * 100).toFixed(1) + '%';
+      document.getElementById('val-fixed').innerText = '$' + fixedOpEx.toLocaleString();
+      document.getElementById('val-cogs').innerText = '$' + cogsPerClient.toLocaleString();
+
+      // Unit Economics
+      const unitMargin = price - cogsPerClient;
+      const marginPct = (unitMargin / price) * 100;
+
+      // Break-even
+      const breakevenClients = unitMargin > 0 ? Math.ceil(fixedOpEx / unitMargin) : '∞';
+      const breakevenRevenue = unitMargin > 0 ? breakevenClients * price : 0;
+
+      document.getElementById('kpi-breakeven-clients').innerText = breakevenClients;
+      document.getElementById('kpi-breakeven-rev').innerText = unitMargin > 0 ? '$' + breakevenRevenue.toLocaleString() + ' / mo threshold' : 'Unprofitable unit economics';
+      document.getElementById('kpi-unit-margin').innerText = '$' + unitMargin.toLocaleString();
+      document.getElementById('kpi-margin-pct').innerText = marginPct.toFixed(1) + '% contribution';
+
+      // 12-Month Simulation Loop
+      let currentClients = startingClients;
+      const labels = [];
+      const revData = [];
+      const costData = [];
+      const profitData = [];
+
+      for (let m = 1; m <= 12; m++) {
+        labels.push('Month ' + m);
+        const lostClients = Math.round(currentClients * churnPct);
+        currentClients = Math.max(0, currentClients - lostClients + newClientsPerMo);
+        
+        const rev = currentClients * price;
+        const totalCost = fixedOpEx + (currentClients * cogsPerClient);
+        const profit = rev - totalCost;
+
+        revData.push(rev);
+        costData.push(totalCost);
+        profitData.push(profit);
+
+        if (m === 1) {
+          const m1ProfitEl = document.getElementById('kpi-m1-profit');
+          m1ProfitEl.innerText = '$' + profit.toLocaleString();
+          m1ProfitEl.className = profit >= 0 ? 'kpi-val good' : 'kpi-val alert';
+          document.getElementById('kpi-m1-rev').innerText = 'From $' + rev.toLocaleString() + ' revenue';
+        }
+        if (m === 12) {
+          const m12ProfitEl = document.getElementById('kpi-m12-profit');
+          m12ProfitEl.innerText = '$' + profit.toLocaleString();
+          m12ProfitEl.className = profit >= 0 ? 'kpi-val rev' : 'kpi-val alert';
+          document.getElementById('kpi-m12-clients').innerText = currentClients + ' active clients ($' + rev.toLocaleString() + ' rev)';
+        }
+      }
+
+      renderChart(labels, revData, costData, profitData);
+    }
+
+    function renderChart(labels, revData, costData, profitData) {
+      const ctx = document.getElementById('scenarioChart').getContext('2d');
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+
+      chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Gross Revenue',
+              data: revData,
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56, 189, 248, 0.1)',
+              borderWidth: 3,
+              tension: 0.3,
+              fill: false
+            },
+            {
+              label: 'Total Expenses (Fixed + Variable)',
+              data: costData,
+              borderColor: '#ef4444',
+              backgroundColor: 'rgba(239, 68, 68, 0.1)',
+              borderWidth: 2,
+              borderDash: [5, 5],
+              tension: 0.3,
+              fill: false
+            },
+            {
+              label: 'Net Monthly Profit',
+              data: profitData,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.15)',
+              borderWidth: 3,
+              tension: 0.3,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              labels: { color: '#cbd5e1', font: { weight: 600 } }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.dataset.label + ': $' + context.raw.toLocaleString();
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { color: '#1e2c3d' },
+              ticks: { color: '#94a3b8' }
+            },
+            y: {
+              grid: { color: '#1e2c3d' },
+              ticks: {
+                color: '#94a3b8',
+                callback: function(value) { return '$' + value.toLocaleString(); }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Initialize on page load
+    window.onload = function() {
+      updateModel();
+    };
+  </script>
+</body>
+</html>
